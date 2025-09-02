@@ -1,0 +1,40 @@
+name: "Set Wrangler Name"
+description: "Automatically sets the name field in wrangler.json to the repository name"
+author: "nemolize"
+
+inputs:
+  wrangler-file:
+    description: "Path to the wrangler.json file"
+    required: false
+    default: "wrangler.json"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Update wrangler.json with repository name
+      id: update
+      shell: bash
+      run: |
+        if [ ! -f "$WRANGLER_FILE" ]; then
+          echo "::error::wrangler.json not found at: $WRANGLER_FILE"
+          exit 1
+        fi
+
+        # Check if jq is installed
+        if ! command -v jq &> /dev/null; then
+          echo "::error::jq is not installed"
+          exit 1
+        fi
+
+        # Update the name field with the repository name
+        jq --arg name "$REPO_NAME" '.name = $name' "$WRANGLER_FILE" > wrangler.tmp.json
+        mv wrangler.tmp.json "$WRANGLER_FILE"
+
+        echo "✅ Updated $WRANGLER_FILE with name: $REPO_NAME"
+      env:
+        WRANGLER_FILE: ${{ inputs.wrangler-file }}
+        REPO_NAME: ${{ github.event.repository.name }}
+
+branding:
+  icon: "edit"
+  color: "orange"
